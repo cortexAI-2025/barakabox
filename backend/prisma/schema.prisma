@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  MERCHANT
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  READY
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentMethod {
+  CASH
+  WALLET
+  CARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+enum MerchantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  phone         String?   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  role          UserRole  @default(CUSTOMER)
+  avatar        String?
+  locale        String    @default("fr")
+  pushToken     String?
+  walletBalance Float     @default(0)
+  referralCode  String    @unique @default(cuid())
+  referredBy    String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  merchant      Merchant?
+  orders        Order[]
+  reviews       Review[]
+  refreshTokens RefreshToken[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([referralCode])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Merchant {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  businessName  String
+  description   String?
+  logo          String?
+  coverImage    String?
+  category      String
+  address       String
+  city          String
+  latitude      Float
+  longitude     Float
+  phone         String
+  status        MerchantStatus @default(PENDING)
+  isFeatured    Boolean        @default(false)
+  featureUntil  DateTime?
+  commission    Float          @default(0.15)
+  rating        Float          @default(0)
+  totalReviews  Int            @default(0)
+  totalSales    Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offers        Offer[]
+  orders        Order[]
+
+  @@index([latitude, longitude])
+  @@index([city])
+  @@index([status])
+  @@index([isFeatured])
+}
+
+model Offer {
+  id                String    @id @default(cuid())
+  merchantId        String
+  title             String
+  description       String
+  imageUrl          String?
+  originalPrice     Float
+  currentPrice      Float
+  minPrice          Float
+  totalQuantity     Int
+  remainingQuantity Int
+  pickupStart       DateTime
+  pickupEnd         DateTime
+  dynamicPricing    Boolean   @default(true)
+  isActive          Boolean   @default(true)
+  tags              String[]
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  merchant Merchant @relation(fields: [merchantId], references: [id], onDelete: Cascade)
+  orders   Order[]
+
+  @@index([merchantId])
+  @@index([pickupEnd])
+  @@index([isActive])
+  @@index([remainingQuantity])
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  userId         String
+  merchantId     String
+  offerId        String
+  quantity       Int           @default(1)
+  unitPrice      Float
+  totalPrice     Float
+  commission     Float
+  status         OrderStatus   @default(PENDING)
+  paymentMethod  PaymentMethod @default(CASH)
+  paymentStatus  PaymentStatus @default(PENDING)
+  qrCode         String        @unique @default(cuid())
+  notes          String?
+  pickupCode     String?
+  confirmedAt    DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+  offer    Offer    @relation(fields: [offerId], references: [id])
+  review   Review?
+  payment  Payment?
+
+  @@index([userId])
+  @@index([merchantId])
+  @@index([offerId])
+  @@index([status])
+  @@index([qrCode])
+  @@index([createdAt])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  amount        Float
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  stripeId      String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+}
+
+model Review {
+  id         String   @id @default(cuid())
+  userId     String
+  orderId    String   @unique
+  merchantId String
+  rating     Int
+  comment    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+  order    Order    @relation(fields: [orderId], references: [id])
+
+  @@index([merchantId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  type      String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([isRead])
+}
+
+model AppConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

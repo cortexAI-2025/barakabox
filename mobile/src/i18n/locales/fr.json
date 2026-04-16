@@ -1,0 +1,103 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "retry": "Réessayer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "submit": "Soumettre",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "seeAll": "Voir tout",
+    "noResults": "Aucun résultat",
+    "km": "km",
+    "mad": "MAD"
+  },
+  "auth": {
+    "login": "Connexion",
+    "register": "Inscription",
+    "logout": "Déconnexion",
+    "email": "Email",
+    "phone": "Téléphone",
+    "password": "Mot de passe",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "forgotPassword": "Mot de passe oublié?",
+    "noAccount": "Pas de compte?",
+    "hasAccount": "Déjà un compte?",
+    "guestMode": "Continuer en invité",
+    "welcome": "Bienvenue sur BarakaBox"
+  },
+  "home": {
+    "title": "Baraka Box",
+    "nearby": "Offres à proximité",
+    "recommended": "Recommandées pour vous",
+    "featured": "Marchands en vedette",
+    "noOffers": "Aucune offre disponible dans votre zone",
+    "searchPlaceholder": "Rechercher restaurants, boulangeries..."
+  },
+  "offers": {
+    "title": "Offres",
+    "pickupWindow": "Retrait",
+    "remaining": "restants",
+    "expiresSoon": "Expire bientôt!",
+    "originalPrice": "Prix original",
+    "discount": "Réduction",
+    "bookNow": "Réserver maintenant",
+    "soldOut": "Épuisé",
+    "expired": "Expiré"
+  },
+  "orders": {
+    "title": "Mes commandes",
+    "myOrders": "Mes commandes",
+    "confirmed": "Confirmée",
+    "ready": "Prête",
+    "completed": "Terminée",
+    "cancelled": "Annulée",
+    "pending": "En attente",
+    "noShow": "Absent",
+    "showQR": "Afficher le QR code",
+    "cancel": "Annuler la commande",
+    "pickupAt": "À récupérer",
+    "orderTotal": "Total",
+    "quantity": "Quantité",
+    "paymentMethod": "Paiement"
+  },
+  "payment": {
+    "cash": "Espèces à la livraison",
+    "wallet": "Portefeuille",
+    "card": "Carte bancaire",
+    "chooseMethod": "Choisir le mode de paiement"
+  },
+  "merchant": {
+    "title": "Tableau de bord",
+    "myOffers": "Mes offres",
+    "createOffer": "Créer une offre",
+    "analytics": "Analytiques",
+    "orders": "Commandes",
+    "scanQR": "Scanner QR",
+    "revenue": "Revenus",
+    "totalSales": "Ventes totales"
+  },
+  "profile": {
+    "title": "Profil",
+    "editProfile": "Modifier le profil",
+    "settings": "Paramètres",
+    "language": "Langue",
+    "notifications": "Notifications",
+    "help": "Aide",
+    "about": "À propos",
+    "referral": "Parrainer un ami"
+  },
+  "review": {
+    "title": "Laisser un avis",
+    "rating": "Note",
+    "comment": "Commentaire (optionnel)",
+    "submit": "Soumettre l'avis",
+    "placeholder": "Votre expérience..."
+  }
+}

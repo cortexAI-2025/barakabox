@@ -1,0 +1,103 @@
+{
+  "common": {
+    "loading": "جار التحميل...",
+    "error": "حدث خطأ",
+    "retry": "إعادة المحاولة",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "save": "حفظ",
+    "close": "إغلاق",
+    "back": "رجوع",
+    "next": "التالي",
+    "submit": "إرسال",
+    "search": "بحث",
+    "filter": "تصفية",
+    "seeAll": "عرض الكل",
+    "noResults": "لا توجد نتائج",
+    "km": "كم",
+    "mad": "درهم"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "password": "كلمة المرور",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "noAccount": "ليس لديك حساب؟",
+    "hasAccount": "لديك حساب بالفعل؟",
+    "guestMode": "المتابعة كضيف",
+    "welcome": "مرحباً بك في باراكا بوكس"
+  },
+  "home": {
+    "title": "باراكا بوكس",
+    "nearby": "العروض القريبة",
+    "recommended": "موصى به لك",
+    "featured": "تجار مميزون",
+    "noOffers": "لا توجد عروض متاحة في منطقتك",
+    "searchPlaceholder": "ابحث عن المطاعم والمخابز..."
+  },
+  "offers": {
+    "title": "العروض",
+    "pickupWindow": "وقت الاستلام",
+    "remaining": "متبقي",
+    "expiresSoon": "تنتهي قريباً!",
+    "originalPrice": "السعر الأصلي",
+    "discount": "خصم",
+    "bookNow": "احجز الآن",
+    "soldOut": "نفدت الكمية",
+    "expired": "منتهي"
+  },
+  "orders": {
+    "title": "طلباتي",
+    "myOrders": "طلباتي",
+    "confirmed": "مؤكد",
+    "ready": "جاهز",
+    "completed": "مكتمل",
+    "cancelled": "ملغي",
+    "pending": "قيد الانتظار",
+    "noShow": "لم يحضر",
+    "showQR": "عرض رمز QR",
+    "cancel": "إلغاء الطلب",
+    "pickupAt": "استلام في",
+    "orderTotal": "المجموع",
+    "quantity": "الكمية",
+    "paymentMethod": "طريقة الدفع"
+  },
+  "payment": {
+    "cash": "نقداً عند الاستلام",
+    "wallet": "المحفظة",
+    "card": "بطاقة بنكية",
+    "chooseMethod": "اختر طريقة الدفع"
+  },
+  "merchant": {
+    "title": "لوحة التحكم",
+    "myOffers": "عروضي",
+    "createOffer": "إنشاء عرض",
+    "analytics": "التحليلات",
+    "orders": "الطلبات",
+    "scanQR": "مسح رمز QR",
+    "revenue": "الإيرادات",
+    "totalSales": "إجمالي المبيعات"
+  },
+  "profile": {
+    "title": "الملف الشخصي",
+    "editProfile": "تعديل الملف",
+    "settings": "الإعدادات",
+    "language": "اللغة",
+    "notifications": "الإشعارات",
+    "help": "المساعدة",
+    "about": "حول التطبيق",
+    "referral": "دعوة صديق"
+  },
+  "review": {
+    "title": "اترك تقييماً",
+    "rating": "التقييم",
+    "comment": "تعليق (اختياري)",
+    "submit": "إرسال التقييم",
+    "placeholder": "تجربتك..."
+  }
+}
