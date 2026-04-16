@@ -9,7 +9,7 @@
     "splash": {
       "image": "./src/assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1A6B3C"
+      "backgroundColor": "#1A5C35"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
@@ -24,7 +24,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/adaptive-icon.png",
-        "backgroundColor": "#1A6B3C"
+        "backgroundColor": "#1A5C35"
       },
       "package": "ma.barakabox.app",
       "permissions": [
@@ -44,7 +44,7 @@
         "expo-notifications",
         {
           "icon": "./src/assets/notification-icon.png",
-          "color": "#1A6B3C"
+          "color": "#1A5C35"
         }
       ],
       [

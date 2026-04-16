@@ -42,8 +42,8 @@ const LoginScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
           <Text style={styles.logo}>🥗</Text>
-          <Text style={styles.appName}>BarakaBox</Text>
-          <Text style={styles.tagline}>Sauvez de la nourriture, économisez de l'argent</Text>
+          <Text style={styles.appName}>BARAKA<Text style={styles.appNameGold}>BOX</Text></Text>
+          <Text style={styles.tagline}>Mange mieux. Paye moins. Sauve plus.</Text>
         </View>
 
         <View style={styles.form}>
@@ -112,8 +112,9 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, padding: spacing.lg },
   header: { alignItems: 'center', paddingVertical: spacing.xxl },
   logo: { fontSize: 56 },
-  appName: { fontSize: fontSizes.xxxl, fontWeight: '900', color: colors.primary, marginTop: spacing.sm },
-  tagline: { fontSize: fontSizes.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs },
+  appName: { fontSize: fontSizes.xxxl, fontWeight: '900', color: colors.primary, marginTop: spacing.sm, letterSpacing: 2 },
+  appNameGold: { color: colors.secondary },
+  tagline: { fontSize: fontSizes.sm, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.xs, fontStyle: 'italic' },
   form: { backgroundColor: colors.surface, borderRadius: 20, padding: spacing.lg, ...{
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08, shadowRadius: 12, elevation: 4,

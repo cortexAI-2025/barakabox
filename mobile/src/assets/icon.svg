@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- App icon: green background with hand+box logo centered -->
+  <rect width="1024" height="1024" rx="220" ry="220" fill="#1A5C35"/>
+
+  <!-- Hand (palm up) -->
+  <path d="M512 720
+    C420 720 340 690 290 650
+    C260 628 248 605 252 585
+    C256 565 272 552 295 548
+    C310 545 328 550 345 560
+    L345 460
+    C345 443 358 430 375 430
+    C392 430 405 443 405 460
+    L405 430
+    C405 413 418 400 435 400
+    C452 400 465 413 465 430
+    L465 420
+    C465 403 478 390 495 390
+    C512 390 525 403 525 420
+    L525 415
+    C525 398 538 385 555 385
+    C572 385 585 398 585 415
+    L585 560
+    C600 548 618 542 635 545
+    C658 549 674 562 678 582
+    C682 602 670 628 640 650
+    C590 690 510 720 512 720Z"
+    fill="#1A5C35" stroke="#0F3A21" stroke-width="4"/>
+
+  <!-- Hand simplified version - white/light for contrast on dark bg -->
+  <path d="M512 730
+    C408 730 318 694 262 648
+    C228 621 213 591 218 565
+    C223 539 243 522 272 517
+    C291 513 313 519 333 532
+    L333 420
+    C333 399 350 382 371 382
+    C392 382 409 399 409 420
+    L409 388
+    C409 367 426 350 447 350
+    C468 350 485 367 485 388
+    L485 376
+    C485 355 502 338 523 338
+    C544 338 561 355 561 376
+    L561 370
+    C561 349 578 332 599 332
+    C620 332 637 349 637 370
+    L637 532
+    C655 517 678 511 698 515
+    C726 520 747 537 752 563
+    C757 589 742 621 708 648
+    C652 694 562 730 512 730Z"
+    fill="white" opacity="0.92"/>
+
+  <!-- Box body -->
+  <rect x="392" y="230" width="240" height="170" rx="14" ry="14" fill="#F9C532"/>
+  <!-- Box lid -->
+  <rect x="376" y="206" width="272" height="40" rx="10" ry="10" fill="#D4A020"/>
+  <!-- Box center stripe -->
+  <rect x="496" y="230" width="32" height="170" fill="#D4A020" opacity="0.5"/>
+  <!-- Box lid stripe -->
+  <rect x="496" y="206" width="32" height="40" fill="#B88A18" opacity="0.6"/>
+  <!-- Heart on box -->
+  <path d="M512 360
+    C512 360 476 336 476 312
+    C476 298 486 288 498 288
+    C506 288 512 294 512 294
+    C512 294 518 288 526 288
+    C538 288 548 298 548 312
+    C548 336 512 360 512 360Z"
+    fill="white" opacity="0.9"/>
+
+  <!-- Sparkles above box -->
+  <!-- Big sparkle center-top -->
+  <path d="M512 160 L518 182 L540 188 L518 194 L512 216 L506 194 L484 188 L506 182 Z"
+    fill="#F9C532"/>
+  <!-- Small sparkle left -->
+  <path d="M428 140 L431 152 L443 155 L431 158 L428 170 L425 158 L413 155 L425 152 Z"
+    fill="#F9C532" opacity="0.8"/>
+  <!-- Small sparkle right -->
+  <path d="M596 140 L599 152 L611 155 L599 158 L596 170 L593 158 L581 155 L593 152 Z"
+    fill="#F9C532" opacity="0.8"/>
+  <!-- Tiny sparkle far left -->
+  <circle cx="398" cy="170" r="6" fill="#F9C532" opacity="0.5"/>
+  <!-- Tiny sparkle far right -->
+  <circle cx="626" cy="170" r="6" fill="#F9C532" opacity="0.5"/>
+</svg>
