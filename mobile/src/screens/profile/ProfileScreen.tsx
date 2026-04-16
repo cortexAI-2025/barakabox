@@ -1,57 +1,59 @@
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, ScrollView, StyleSheet, TouchableOpacity, Image,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
-import { useAppDispatch, useAppSelector } from '../../store';
-import { logout } from '../../store/slices/authSlice';
+import { useAppSelector } from '../../store';
+import { ordersAPI } from '../../services/api';
 import { colors, spacing, fontSizes, borderRadius, shadows } from '../../utils/theme';
 
-const MenuItem: React.FC<{
-  icon: string; label: string; onPress: () => void;
-  badge?: string; color?: string; danger?: boolean;
-}> = ({ icon, label, onPress, badge, color = colors.text, danger }) => (
-  <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-    <View style={[styles.menuIcon, { backgroundColor: (danger ? colors.error : colors.primary) + '15' }]}>
-      <Ionicons name={icon as any} size={20} color={danger ? colors.error : colors.primary} />
-    </View>
-    <Text style={[styles.menuLabel, danger && { color: colors.error }]}>{label}</Text>
-    {badge && <View style={styles.badge}><Text style={styles.badgeText}>{badge}</Text></View>}
-    {!danger && <Ionicons name="chevron-forward" size={18} color={colors.textLight} />}
-  </TouchableOpacity>
+const ImpactCard: React.FC<{
+  title: string; value: string; unit: string; icon: string;
+}> = ({ title, value, unit, icon }) => (
+  <View style={styles.impactCard}>
+    <Text style={styles.impactTitle}>{title}</Text>
+    <Text style={styles.impactIcon}>{icon}</Text>
+    <Text style={styles.impactValue}>{value}</Text>
+    <Text style={styles.impactUnit}>{unit}</Text>
+  </View>
 );
 
 const ProfileScreen: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const dispatch = useAppDispatch();
   const navigation = useNavigation<any>();
   const { user } = useAppSelector((s) => s.auth);
+  const [lastOrder, setLastOrder] = useState<any>(null);
+  const [stats, setStats] = useState({ totalSaved: 0, co2: 0, orders: 0 });
 
-  const handleLogout = () => {
-    Alert.alert(
-      t('auth.logout'),
-      'Êtes-vous sûr de vouloir vous déconnecter?',
-      [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Déconnexion', style: 'destructive', onPress: () => dispatch(logout()) },
-      ]
-    );
-  };
+  useEffect(() => {
+    if (!user) return;
+    ordersAPI.getUserOrders({ status: 'COMPLETED', limit: 1 }).then((res) => {
+      const orders = res.data.data || [];
+      if (orders.length) setLastOrder(orders[0]);
+    }).catch(() => {});
 
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'fr' ? 'ar' : 'fr';
-    i18n.changeLanguage(newLang);
-  };
+    ordersAPI.getUserOrders({ status: 'COMPLETED', limit: 100 }).then((res) => {
+      const orders = res.data.data || [];
+      const totalSaved = orders.reduce((sum: number, o: any) =>
+        sum + (o.offer?.originalPrice - o.unitPrice) * o.quantity, 0);
+      // ~2.5kg CO2 per meal saved, ~0.4 kWh equivalent
+      setStats({
+        orders: orders.length,
+        totalSaved: Math.round(totalSaved),
+        co2: Math.round(orders.length * 0.4 * 100) / 10,
+      });
+    }).catch(() => {});
+  }, [user]);
 
   if (!user) {
     return (
       <View style={styles.guestContainer}>
         <Text style={styles.guestIcon}>👤</Text>
-        <Text style={styles.guestTitle}>Mode invité</Text>
-        <Text style={styles.guestSubtitle}>Connectez-vous pour accéder à votre profil</Text>
+        <Text style={styles.guestTitle}>Pas encore connecté</Text>
+        <Text style={styles.guestSub}>Connectez-vous pour voir votre profil et votre impact</Text>
         <TouchableOpacity
           style={styles.loginBtn}
-          onPress={() => navigation.navigate('Auth', { screen: 'Login' })}
+          onPress={() => navigation.navigate('Login')}
         >
           <Text style={styles.loginBtnText}>Se connecter</Text>
         </TouchableOpacity>
@@ -59,138 +61,211 @@ const ProfileScreen: React.FC = () => {
     );
   }
 
+  const initials = `${user.firstName[0]}${user.lastName[0]}`.toUpperCase();
+
   return (
-    <ScrollView style={styles.container}>
-      {/* Profile Header */}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header: avatar + name + settings */}
       <View style={styles.profileHeader}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {user.firstName[0]}{user.lastName[0]}
-          </Text>
-        </View>
-        <Text style={styles.name}>{user.firstName} {user.lastName}</Text>
-        <Text style={styles.email}>{user.email || user.phone}</Text>
-        {user.role === 'MERCHANT' && (
-          <View style={styles.merchantBadge}>
-            <Ionicons name="storefront" size={12} color={colors.primary} />
-            <Text style={styles.merchantBadgeText}>Marchand</Text>
+        <View style={styles.avatarRow}>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>{initials}</Text>
           </View>
-        )}
+          <View style={styles.nameBlock}>
+            <Text style={styles.userName}>{user.firstName} {user.lastName}</Text>
+            <Text style={styles.userEmail}>{user.email || user.phone}</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.settingsBtn}
+            onPress={() => navigation.navigate('Account')}
+          >
+            <Ionicons name="settings-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Referral Card */}
-      <TouchableOpacity style={styles.referralCard}>
-        <View style={styles.referralLeft}>
-          <Text style={styles.referralTitle}>🎁 Parrainez un ami</Text>
-          <Text style={styles.referralSubtitle}>Gagnez des réductions pour chaque invitation</Text>
-        </View>
-        <View style={styles.referralCode}>
-          <Text style={styles.referralCodeText}>{user.referralCode?.slice(-6).toUpperCase()}</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.divider} />
 
-      {/* Account Menu */}
-      <View style={styles.menuSection}>
-        <Text style={styles.sectionLabel}>Mon compte</Text>
-        <MenuItem icon="person-outline" label="Modifier le profil" onPress={() => {}} />
-        <MenuItem icon="notifications-outline" label="Notifications" onPress={() => navigation.navigate('Notifications')} />
-        <MenuItem icon="wallet-outline" label="Portefeuille" onPress={() => {}} badge="0 MAD" />
-        <MenuItem icon="receipt-outline" label="Mes commandes" onPress={() => navigation.navigate('Orders')} />
-      </View>
-
-      {/* Merchant Menu */}
-      {(user.role === 'MERCHANT' || user.role === 'ADMIN') && (
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionLabel}>Espace marchand</Text>
-          <MenuItem icon="storefront-outline" label="Tableau de bord" onPress={() => navigation.navigate('MerchantDashboard')} />
-          <MenuItem icon="add-circle-outline" label="Créer une offre" onPress={() => navigation.navigate('CreateOffer')} />
-          <MenuItem icon="bar-chart-outline" label="Analytiques" onPress={() => {}} />
+      {/* Last order */}
+      {lastOrder && (
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Vos commandes</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
+              <Text style={styles.seeAll}>Voir tout</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.orderCard}
+            onPress={() => navigation.navigate('Orders')}
+          >
+            <View style={styles.orderLogoWrap}>
+              <Image
+                source={{ uri: lastOrder.merchant?.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(lastOrder.merchant?.businessName || 'B')}&background=1A5C35&color=fff` }}
+                style={styles.orderLogo}
+              />
+              {lastOrder.status === 'COMPLETED' && (
+                <View style={styles.checkBadge}>
+                  <Ionicons name="checkmark" size={10} color="#FFF" />
+                </View>
+              )}
+            </View>
+            <View style={styles.orderInfo}>
+              <Text style={styles.orderMerchant}>{lastOrder.merchant?.businessName}</Text>
+              <View style={styles.starsRow}>
+                {lastOrder.review ? (
+                  [1, 2, 3, 4, 5].map((s) => (
+                    <Ionicons
+                      key={s} name="star" size={16}
+                      color={s <= lastOrder.review.rating ? colors.secondary : colors.border}
+                    />
+                  ))
+                ) : (
+                  <TouchableOpacity
+                    style={styles.reviewBtn}
+                    onPress={() => navigation.navigate('Orders')}
+                  >
+                    <Text style={styles.reviewBtnText}>Laisser un avis →</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       )}
 
-      {/* Preferences */}
-      <View style={styles.menuSection}>
-        <Text style={styles.sectionLabel}>Préférences</Text>
-        <MenuItem
-          icon="language-outline"
-          label={`Langue: ${i18n.language === 'fr' ? 'Français' : 'العربية'}`}
-          onPress={toggleLanguage}
-        />
-        <MenuItem icon="help-circle-outline" label="Aide & Support" onPress={() => {}} />
-        <MenuItem icon="information-circle-outline" label="À propos de BarakaBox" onPress={() => {}} />
+      {/* Referral card */}
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.referralCard} onPress={() => navigation.navigate('Account')}>
+          <View style={styles.referralImgWrap}>
+            <Text style={styles.referralImgPlaceholder}>🤝</Text>
+          </View>
+          <View style={styles.referralContent}>
+            <Text style={styles.referralTitle}>Invitez vos amis</Text>
+            <Text style={styles.referralSub}>
+              Gagnez un bon pour chaque ami qui rejoint l'application et sauve des repas !
+            </Text>
+            <View style={styles.referralCTA}>
+              <Ionicons name="ticket-outline" size={14} color={colors.primary} />
+              <Text style={styles.referralCTAText}>Gagnez des bons de 25 MAD</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
       </View>
 
-      {/* Logout */}
-      <View style={[styles.menuSection, { marginBottom: spacing.xxl }]}>
-        <MenuItem icon="log-out-outline" label={t('auth.logout')} onPress={handleLogout} danger />
+      {/* Impact stats */}
+      <View style={styles.section}>
+        <View style={styles.impactRow}>
+          <ImpactCard
+            title={`CO2e\névité`}
+            value={`${stats.co2}`}
+            unit="kWh"
+            icon="⚡"
+          />
+          <View style={styles.impactDivider} />
+          <ImpactCard
+            title={`Économies\nréalisées`}
+            value={`${stats.totalSaved}`}
+            unit="MAD"
+            icon="🪙"
+          />
+        </View>
       </View>
+
+      {/* App version */}
+      <Text style={styles.version}>BarakaBox v1.0.0</Text>
+
+      <View style={{ height: 32 }} />
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  guestContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+
+  guestContainer: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    padding: spacing.xl, backgroundColor: colors.background,
+  },
   guestIcon: { fontSize: 64, marginBottom: spacing.lg },
-  guestTitle: { fontSize: fontSizes.xl, fontWeight: '800', color: colors.text, marginBottom: spacing.sm },
-  guestSubtitle: { fontSize: fontSizes.md, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.xl },
+  guestTitle: { fontSize: fontSizes.xl, fontWeight: '800', color: colors.text, marginBottom: spacing.xs },
+  guestSub: { fontSize: fontSizes.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20, marginBottom: spacing.xl },
   loginBtn: {
-    backgroundColor: colors.primary, paddingHorizontal: spacing.xl, paddingVertical: spacing.md,
-    borderRadius: borderRadius.round,
+    backgroundColor: colors.primary, paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md, borderRadius: borderRadius.round,
   },
   loginBtnText: { color: '#FFF', fontWeight: '700', fontSize: fontSizes.md },
 
-  profileHeader: {
-    backgroundColor: colors.primary, paddingTop: 56, paddingBottom: spacing.xl,
-    alignItems: 'center',
-  },
+  profileHeader: { backgroundColor: colors.surface, paddingHorizontal: spacing.lg, paddingTop: 56, paddingBottom: spacing.lg },
+  avatarRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   avatar: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: 'rgba(255,255,255,0.25)',
-    alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md,
+    width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary + '20',
+    alignItems: 'center', justifyContent: 'center',
   },
-  avatarText: { fontSize: fontSizes.xxl, fontWeight: '900', color: '#FFF' },
-  name: { fontSize: fontSizes.xl, fontWeight: '800', color: '#FFF' },
-  email: { fontSize: fontSizes.sm, color: 'rgba(255,255,255,0.8)', marginTop: 4 },
-  merchantBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: spacing.sm, paddingVertical: 3,
-    borderRadius: borderRadius.round, marginTop: spacing.sm,
+  avatarText: { fontSize: fontSizes.xl, fontWeight: '900', color: colors.primary },
+  nameBlock: { flex: 1 },
+  userName: { fontSize: fontSizes.xl, fontWeight: '900', color: colors.text },
+  userEmail: { fontSize: fontSizes.sm, color: colors.textSecondary, marginTop: 2 },
+  settingsBtn: { padding: spacing.xs },
+
+  divider: { height: 8, backgroundColor: colors.borderLight },
+
+  section: { backgroundColor: colors.surface, marginBottom: 8, paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
+  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  sectionTitle: { fontSize: fontSizes.lg, fontWeight: '800', color: colors.text },
+  seeAll: { fontSize: fontSizes.sm, color: colors.primary, fontWeight: '700', textDecorationLine: 'underline' },
+
+  orderCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  orderLogoWrap: { position: 'relative' },
+  orderLogo: { width: 56, height: 56, borderRadius: 28, backgroundColor: colors.borderLight },
+  checkBadge: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 18, height: 18, borderRadius: 9, backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: colors.surface,
   },
-  merchantBadgeText: { fontSize: fontSizes.xs, color: colors.primary, fontWeight: '700' },
+  orderInfo: { flex: 1 },
+  orderMerchant: { fontSize: fontSizes.md, fontWeight: '800', color: colors.text, marginBottom: 4 },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  reviewBtn: {},
+  reviewBtnText: { fontSize: fontSizes.sm, color: colors.primary, fontWeight: '600' },
 
   referralCard: {
-    flexDirection: 'row', alignItems: 'center', margin: spacing.lg,
-    backgroundColor: colors.secondary + '15', borderRadius: borderRadius.lg,
-    padding: spacing.md, borderWidth: 1.5, borderColor: colors.secondary + '40',
+    flexDirection: 'row', backgroundColor: colors.borderLight,
+    borderRadius: borderRadius.lg, overflow: 'hidden', minHeight: 120,
   },
-  referralLeft: { flex: 1 },
-  referralTitle: { fontSize: fontSizes.md, fontWeight: '700', color: colors.text },
-  referralSubtitle: { fontSize: fontSizes.xs, color: colors.textSecondary, marginTop: 2 },
-  referralCode: {
-    backgroundColor: colors.secondary, paddingHorizontal: spacing.md, paddingVertical: spacing.xs,
-    borderRadius: borderRadius.sm,
+  referralImgWrap: {
+    width: 120, backgroundColor: colors.primary + '15',
+    alignItems: 'center', justifyContent: 'center',
   },
-  referralCodeText: { fontSize: fontSizes.sm, fontWeight: '900', color: '#FFF', letterSpacing: 2 },
+  referralImgPlaceholder: { fontSize: 48 },
+  referralContent: { flex: 1, padding: spacing.md, justifyContent: 'space-between' },
+  referralTitle: { fontSize: fontSizes.md, fontWeight: '900', color: colors.primary },
+  referralSub: { fontSize: fontSizes.xs, color: colors.text, lineHeight: 17, marginVertical: spacing.xs },
+  referralCTA: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: colors.surface, alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm, paddingVertical: 4,
+    borderRadius: borderRadius.round, borderWidth: 1, borderColor: colors.primary + '30',
+  },
+  referralCTAText: { fontSize: fontSizes.xs, fontWeight: '700', color: colors.primary },
 
-  menuSection: { marginTop: spacing.sm },
-  sectionLabel: {
-    fontSize: fontSizes.xs, fontWeight: '700', color: colors.textSecondary,
-    textTransform: 'uppercase', letterSpacing: 1,
-    paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
-    backgroundColor: colors.borderLight,
+  impactRow: {
+    flexDirection: 'row', backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg, overflow: 'hidden',
+    borderWidth: 1, borderColor: colors.border,
   },
-  menuItem: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    backgroundColor: colors.surface, paddingHorizontal: spacing.lg, paddingVertical: spacing.md,
-    borderBottomWidth: 1, borderBottomColor: colors.borderLight,
+  impactCard: { flex: 1, alignItems: 'center', paddingVertical: spacing.lg },
+  impactDivider: { width: 1, backgroundColor: colors.border, marginVertical: spacing.md },
+  impactTitle: {
+    fontSize: fontSizes.md, fontWeight: '800', color: colors.primary,
+    textAlign: 'center', lineHeight: 20,
   },
-  menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  menuLabel: { flex: 1, fontSize: fontSizes.md, color: colors.text, fontWeight: '500' },
-  badge: {
-    backgroundColor: colors.primary + '15', paddingHorizontal: spacing.sm, paddingVertical: 2,
-    borderRadius: borderRadius.round,
-  },
-  badgeText: { fontSize: fontSizes.xs, color: colors.primary, fontWeight: '700' },
+  impactIcon: { fontSize: 40, marginVertical: spacing.sm },
+  impactValue: { fontSize: 36, fontWeight: '900', color: colors.text },
+  impactUnit: { fontSize: fontSizes.sm, color: colors.textSecondary, fontWeight: '600' },
+
+  version: { textAlign: 'center', fontSize: fontSizes.xs, color: colors.textLight, marginTop: spacing.lg },
 });
 
 export default ProfileScreen;

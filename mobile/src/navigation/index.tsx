@@ -13,11 +13,16 @@ import { colors } from '../utils/theme';
 import LoginScreen from '../screens/auth/LoginScreen';
 import RegisterScreen from '../screens/auth/RegisterScreen';
 import HomeScreen from '../screens/home/HomeScreen';
+import FavoritesScreen from '../screens/home/FavoritesScreen';
+import BrowseScreen from '../screens/home/BrowseScreen';
+import NotificationsScreen from '../screens/home/NotificationsScreen';
 import OfferDetailScreen from '../screens/offers/OfferDetailScreen';
 import BookingScreen from '../screens/orders/BookingScreen';
 import OrderConfirmationScreen from '../screens/orders/OrderConfirmationScreen';
 import MyOrdersScreen from '../screens/orders/MyOrdersScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import AccountScreen from '../screens/profile/AccountScreen';
+import ReferralScreen from '../screens/profile/ReferralScreen';
 import MerchantDashboardScreen from '../screens/merchant/MerchantDashboardScreen';
 import QRScannerScreen from '../screens/merchant/QRScannerScreen';
 
@@ -43,6 +48,7 @@ const TabNavigator: React.FC = () => {
         tabBarIcon: ({ focused, color, size }) => {
           const icons: Record<string, [string, string]> = {
             Home: ['home', 'home-outline'],
+            Favorites: ['heart', 'heart-outline'],
             Orders: ['bag', 'bag-outline'],
             Merchant: ['storefront', 'storefront-outline'],
             Profile: ['person', 'person-outline'],
@@ -53,6 +59,7 @@ const TabNavigator: React.FC = () => {
       })}
     >
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Accueil' }} />
+      <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favoris' }} />
       <Tab.Screen name="Orders" component={MyOrdersScreen} options={{ title: 'Commandes' }} />
       {isMerchant && (
         <Tab.Screen name="Merchant" component={MerchantDashboardScreen} options={{ title: 'Marchand' }} />
@@ -64,7 +71,7 @@ const TabNavigator: React.FC = () => {
 
 const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading } = useAppSelector((s) => s.auth);
+  const { isLoading } = useAppSelector((s) => s.auth);
 
   useEffect(() => {
     dispatch(loadUser());
@@ -87,6 +94,10 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="OfferDetail" component={OfferDetailScreen} />
         <Stack.Screen name="Booking" component={BookingScreen} />
         <Stack.Screen name="OrderConfirmation" component={OrderConfirmationScreen} />
+        <Stack.Screen name="Browse" component={BrowseScreen} />
+        <Stack.Screen name="Notifications" component={NotificationsScreen} />
+        <Stack.Screen name="Account" component={AccountScreen} />
+        <Stack.Screen name="Referral" component={ReferralScreen} />
         <Stack.Screen name="MerchantDashboard" component={MerchantDashboardScreen} />
         <Stack.Screen name="MerchantQRScanner" component={QRScannerScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>

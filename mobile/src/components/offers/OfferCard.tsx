@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View, Text, Image, TouchableOpacity, StyleSheet, Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTranslation } from 'react-i18next';
 import { colors, spacing, borderRadius, fontSizes, shadows } from '../../utils/theme';
 
-interface Offer {
+export interface Offer {
   id: string;
   title: string;
   imageUrl?: string;
@@ -14,107 +15,145 @@ interface Offer {
   totalQuantity: number;
   pickupStart: string;
   pickupEnd: string;
-  scarcityLevel: string;
-  isExpiringSoon: boolean;
+  scarcityLevel?: string;
+  isExpiringSoon?: boolean;
   distance?: number;
   merchant: {
+    id: string;
     businessName: string;
     logo?: string;
     rating: number;
+    totalReviews?: number;
     category: string;
     isFeatured: boolean;
+    address?: string;
   };
 }
 
 interface Props {
   offer: Offer;
   onPress: () => void;
-  horizontal?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
+  variant?: 'list' | 'compact';
 }
 
-const Countdown: React.FC<{ end: string }> = ({ end }) => {
-  const [timeLeft, setTimeLeft] = useState('');
-
-  useEffect(() => {
-    const update = () => {
-      const diff = new Date(end).getTime() - Date.now();
-      if (diff <= 0) { setTimeLeft('Expiré'); return; }
-      const h = Math.floor(diff / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(h > 0 ? `${h}h ${m}m` : `${m}m ${s}s`);
-    };
-    update();
-    const interval = setInterval(update, 1000);
-    return () => clearInterval(interval);
-  }, [end]);
-
-  return <Text style={styles.countdown}>{timeLeft}</Text>;
+const formatPickup = (start: string, end: string): string => {
+  const now = new Date();
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  const isToday = startDate.toDateString() === now.toDateString();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const isTomorrow = startDate.toDateString() === tomorrow.toDateString();
+  const label = isToday ? "aujourd'hui" : isTomorrow ? 'demain' : startDate.toLocaleDateString('fr-FR', { weekday: 'long' });
+  const fmt = (d: Date) => d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  return `À récupérer ${label} : ${fmt(startDate)} - ${fmt(endDate)}`;
 };
 
-const scarcityColors: Record<string, string> = {
-  critical: colors.error,
-  low: '#FF6B35',
-  medium: colors.warning,
-  high: colors.success,
+const BADGE_CONFIG: Record<string, { label: string; bg: string; color: string }> = {
+  featured: { label: 'Champion Anti-gaspi', bg: 'rgba(255,255,255,0.92)', color: colors.primary },
+  expiring: { label: 'Expire bientôt', bg: colors.error, color: '#FFF' },
+  popular: { label: 'Populaire', bg: 'rgba(255,255,255,0.92)', color: colors.text },
+  last: { label: 'Dernière chance', bg: colors.secondary, color: colors.text },
 };
 
-const OfferCard: React.FC<Props> = ({ offer, onPress, horizontal = false }) => {
-  const { t } = useTranslation();
+const OfferCard: React.FC<Props> = ({
+  offer, onPress, isFavorite = false, onToggleFavorite, variant = 'list',
+}) => {
+  const heartScale = useRef(new Animated.Value(1)).current;
   const discount = Math.round((1 - offer.currentPrice / offer.originalPrice) * 100);
+
+  const badge =
+    offer.isExpiringSoon ? 'expiring'
+    : offer.remainingQuantity === 1 ? 'last'
+    : offer.merchant.isFeatured ? 'featured'
+    : offer.remainingQuantity / offer.totalQuantity < 0.3 ? 'popular'
+    : null;
+
+  const badgeConf = badge ? BADGE_CONFIG[badge] : null;
+
+  const handleFavorite = () => {
+    Animated.sequence([
+      Animated.spring(heartScale, { toValue: 1.4, useNativeDriver: true }),
+      Animated.spring(heartScale, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+    onToggleFavorite?.(offer.id);
+  };
+
+  const isGiftIcon = offer.merchant.isFeatured; // use gift icon for exclusive offers
 
   return (
     <TouchableOpacity
-      style={[styles.card, horizontal ? styles.horizontal : styles.vertical, shadows.md]}
+      style={[styles.card, variant === 'compact' && styles.cardCompact, shadows.md]}
       onPress={onPress}
-      activeOpacity={0.9}
+      activeOpacity={0.92}
     >
-      <View style={horizontal ? styles.imageContainerH : styles.imageContainerV}>
+      {/* Photo with overlay */}
+      <View style={styles.imageContainer}>
         <Image
-          source={{ uri: offer.imageUrl || 'https://via.placeholder.com/300x200/1A6B3C/FFF?text=🥗' }}
-          style={horizontal ? styles.imageH : styles.imageV}
+          source={{ uri: offer.imageUrl || `https://picsum.photos/seed/${offer.id}/600/300` }}
+          style={styles.image}
           resizeMode="cover"
         />
-        <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>-{discount}%</Text>
+        {/* Dark gradient overlay bottom */}
+        <View style={styles.imageGradient} />
+
+        {/* Merchant logo + name overlay */}
+        <View style={styles.merchantOverlay}>
+          <View style={styles.merchantLogoWrap}>
+            <Image
+              source={{ uri: offer.merchant.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(offer.merchant.businessName)}&background=1A5C35&color=fff&size=80` }}
+              style={styles.merchantLogo}
+            />
+          </View>
+          <Text style={styles.merchantOverlayName} numberOfLines={1}>
+            {offer.merchant.businessName}
+          </Text>
         </View>
-        {offer.merchant.isFeatured && (
-          <View style={styles.featuredBadge}>
-            <Ionicons name="star" size={10} color="#FFF" />
-            <Text style={styles.featuredText}>Vedette</Text>
+
+        {/* Top-left badge */}
+        {badgeConf && (
+          <View style={[styles.badge, { backgroundColor: badgeConf.bg }]}>
+            <Text style={[styles.badgeText, { color: badgeConf.color }]}>{badgeConf.label}</Text>
           </View>
         )}
-        {offer.isExpiringSoon && (
-          <View style={styles.urgentBadge}>
-            <Ionicons name="time" size={10} color="#FFF" />
-            <Text style={styles.urgentText}> Expire bientôt</Text>
-          </View>
-        )}
+
+        {/* Heart button */}
+        <Animated.View style={[styles.heartBtn, { transform: [{ scale: heartScale }] }]}>
+          <TouchableOpacity onPress={handleFavorite} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <Ionicons
+              name={isFavorite ? 'heart' : 'heart-outline'}
+              size={22}
+              color={isFavorite ? colors.error : '#FFF'}
+            />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
+      {/* Card content */}
       <View style={styles.content}>
-        <Text style={styles.merchantName} numberOfLines={1}>{offer.merchant.businessName}</Text>
-        <Text style={styles.title} numberOfLines={2}>{offer.title}</Text>
-
-        <View style={styles.row}>
-          <View style={[styles.scarcityDot, { backgroundColor: scarcityColors[offer.scarcityLevel] }]} />
-          <Text style={styles.quantity}>{offer.remainingQuantity} {t('offers.remaining')}</Text>
-          {offer.distance != null && (
-            <>
-              <Text style={styles.dot}>·</Text>
-              <Ionicons name="location" size={12} color={colors.textSecondary} />
-              <Text style={styles.distance}>{offer.distance} {t('common.km')}</Text>
-            </>
-          )}
-        </View>
+        <Text style={styles.offerTitle} numberOfLines={1}>{offer.title}</Text>
+        <Text style={styles.pickupTime} numberOfLines={1}>
+          {formatPickup(offer.pickupStart, offer.pickupEnd)}
+        </Text>
 
         <View style={styles.footer}>
-          <View>
-            <Text style={styles.currentPrice}>{offer.currentPrice.toFixed(0)} MAD</Text>
-            <Text style={styles.originalPrice}>{offer.originalPrice.toFixed(0)} MAD</Text>
+          <View style={styles.footerLeft}>
+            <Ionicons name="star" size={13} color={colors.primary} />
+            <Text style={styles.rating}>{offer.merchant.rating.toFixed(1)}</Text>
+            {offer.distance != null && (
+              <>
+                <View style={styles.footerDot} />
+                <Text style={styles.distance}>{offer.distance < 1 ? `${Math.round(offer.distance * 1000)} m` : `${offer.distance.toFixed(1)} km`}</Text>
+              </>
+            )}
           </View>
-          <View style={styles.pickupInfo}>
-            <Countdown end={offer.pickupEnd} />
+
+          <View style={styles.priceBlock}>
+            {isGiftIcon && <Ionicons name="gift-outline" size={14} color={colors.primary} style={{ marginRight: 3 }} />}
+            <Text style={styles.originalPrice}>{offer.originalPrice.toFixed(2).replace('.', ',')} MAD</Text>
+            <Text style={styles.currentPrice}> {offer.currentPrice.toFixed(2).replace('.', ',')} MAD</Text>
           </View>
         </View>
       </View>
@@ -123,49 +162,69 @@ const OfferCard: React.FC<Props> = ({ offer, onPress, horizontal = false }) => {
 };
 
 const styles = StyleSheet.create({
-  card: { backgroundColor: colors.surface, borderRadius: borderRadius.lg, overflow: 'hidden' },
-  vertical: { width: 220, marginRight: spacing.md },
-  horizontal: { flexDirection: 'row', marginBottom: spacing.md },
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    marginBottom: spacing.md,
+  },
+  cardCompact: { marginBottom: spacing.sm },
 
-  imageContainerV: { position: 'relative' },
-  imageContainerH: { position: 'relative', width: 120 },
-  imageV: { width: '100%', height: 140 },
-  imageH: { width: 120, height: 120 },
+  imageContainer: { position: 'relative', height: 180 },
+  image: { width: '100%', height: '100%' },
+  imageGradient: {
+    ...StyleSheet.absoluteFillObject,
+    bottom: 0, top: '40%',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
 
-  discountBadge: {
-    position: 'absolute', top: 8, left: 8,
-    backgroundColor: colors.error, paddingHorizontal: 8, paddingVertical: 3,
+  merchantOverlay: {
+    position: 'absolute', bottom: spacing.sm, left: spacing.sm,
+    flexDirection: 'row', alignItems: 'center',
+  },
+  merchantLogoWrap: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.surface, overflow: 'hidden',
+    borderWidth: 2, borderColor: 'rgba(255,255,255,0.9)',
+  },
+  merchantLogo: { width: '100%', height: '100%' },
+  merchantOverlayName: {
+    color: '#FFF', fontWeight: '800', fontSize: fontSizes.sm,
+    marginLeft: spacing.xs, textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3,
+    maxWidth: 220,
+  },
+
+  badge: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm,
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
     borderRadius: borderRadius.round,
   },
-  discountText: { color: '#FFF', fontSize: fontSizes.xs, fontWeight: '800' },
-  featuredBadge: {
-    position: 'absolute', top: 8, right: 8,
-    backgroundColor: colors.secondary, paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: borderRadius.round, flexDirection: 'row', alignItems: 'center',
+  badgeText: { fontSize: fontSizes.xs, fontWeight: '700' },
+
+  heartBtn: {
+    position: 'absolute', top: spacing.sm, right: spacing.sm,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  featuredText: { color: '#FFF', fontSize: 9, fontWeight: '700', marginLeft: 2 },
-  urgentBadge: {
-    position: 'absolute', bottom: 8, left: 8,
-    backgroundColor: colors.error + 'EE', paddingHorizontal: 6, paddingVertical: 2,
-    borderRadius: borderRadius.round, flexDirection: 'row', alignItems: 'center',
+
+  content: { padding: spacing.md, paddingTop: spacing.sm + 2 },
+  offerTitle: { fontSize: fontSizes.md, fontWeight: '700', color: colors.text, marginBottom: 3 },
+  pickupTime: { fontSize: fontSizes.xs, color: colors.textSecondary, marginBottom: spacing.sm },
+
+  footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  footerLeft: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  rating: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.text },
+  footerDot: { width: 3, height: 3, borderRadius: 2, backgroundColor: colors.textLight },
+  distance: { fontSize: fontSizes.sm, color: colors.textSecondary },
+
+  priceBlock: { flexDirection: 'row', alignItems: 'center' },
+  originalPrice: {
+    fontSize: fontSizes.xs, color: colors.textLight,
+    textDecorationLine: 'line-through',
   },
-  urgentText: { color: '#FFF', fontSize: 9, fontWeight: '700' },
-
-  content: { flex: 1, padding: spacing.sm + 2 },
-  merchantName: { fontSize: fontSizes.xs, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 },
-  title: { fontSize: fontSizes.sm, fontWeight: '700', color: colors.text, marginBottom: spacing.xs },
-
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.xs },
-  scarcityDot: { width: 7, height: 7, borderRadius: 4, marginRight: 4 },
-  quantity: { fontSize: fontSizes.xs, color: colors.textSecondary },
-  dot: { marginHorizontal: 4, color: colors.textLight },
-  distance: { fontSize: fontSizes.xs, color: colors.textSecondary },
-
-  footer: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: 4 },
-  currentPrice: { fontSize: fontSizes.lg, fontWeight: '800', color: colors.primary },
-  originalPrice: { fontSize: fontSizes.xs, color: colors.textLight, textDecorationLine: 'line-through' },
-  pickupInfo: { alignItems: 'flex-end' },
-  countdown: { fontSize: fontSizes.xs, fontWeight: '700', color: colors.warning },
+  currentPrice: { fontSize: fontSizes.md, fontWeight: '900', color: colors.text },
 });
 
 export default OfferCard;
