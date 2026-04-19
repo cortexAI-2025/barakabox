@@ -14,15 +14,13 @@ on:
 
 jobs:
   build:
-    name: Build APK (${{ github.event.inputs.mode || 'quick' }})
     runs-on: ubuntu-latest
 
     steps:
-      # ── 1. Checkout ────────────────────────────────────────────────────────
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ── 2. Node.js (Expo prebuild) ─────────────────────────────────────────
+      # ── Node + Expo prebuild (génère mobile/android/) ─────────────────────
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -30,17 +28,14 @@ jobs:
 
       - name: Install JS dependencies
         working-directory: mobile
-        run: |
-          npm ci --prefer-offline 2>&1 || npm install 2>&1
+        run: npm install
 
-      # ── 3. Expo prebuild → génère android/ ────────────────────────────────
-      - name: Expo prebuild (generate native Android project)
+      - name: Expo prebuild
         working-directory: mobile
-        run: |
-          npx expo prebuild --platform android --clean --no-install 2>&1
+        run: npx expo prebuild --platform android --clean --no-install 2>&1
 
-      # ── 4. Java 17 + Gradle 8.6 ────────────────────────────────────────────
-      - name: Set up Java 17
+      # ── Java 17 + Gradle (même config que MobixBuild) ─────────────────────
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -59,43 +54,43 @@ jobs:
           gradle wrapper --gradle-version 8.6 --no-validate-url
           chmod +x gradlew
 
-      # ── 5. Quick mode — debug APK ──────────────────────────────────────────
-      - name: Build debug APK (quick)
+      - name: Clean Gradle cache
+        working-directory: mobile/android
+        run: gradle clean --no-daemon
+
+      # ── Quick (debug APK) ─────────────────────────────────────────────────
+      - name: Build debug APK
         if: ${{ github.event.inputs.mode == 'quick' || github.event.inputs.mode == '' }}
         working-directory: mobile/android
         run: |
           gradle assembleDebug \
             --no-daemon \
             --stacktrace \
-            --max-workers=2 \
-            -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" \
+            --max-workers=1 \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
 
-      # ── 6. Production mode — signed release APK ───────────────────────────
-      - name: Generate CI keystore (production/store)
+      # ── Production (signed release APK) ───────────────────────────────────
+      - name: Generate CI keystore
         if: ${{ github.event.inputs.mode == 'production' || github.event.inputs.mode == 'store' }}
         run: |
           keytool -genkeypair \
             -keystore mobile/android/app/ci.keystore \
-            -alias     release \
-            -keyalg    RSA \
-            -keysize   2048 \
-            -validity  365 \
-            -storepass ci_password \
-            -keypass   ci_password \
-            -dname     "CN=BarakaBox, OU=Build, O=BarakaBox, L=Casablanca, ST=MA, C=MA" \
+            -alias release -keyalg RSA -keysize 2048 -validity 365 \
+            -storepass ci_password -keypass ci_password \
+            -dname "CN=BarakaBox, OU=Build, O=BarakaBox, L=Casablanca, ST=MA, C=MA" \
             -noprompt
 
-      - name: Build signed release APK (production)
+      - name: Build signed release APK
         if: ${{ github.event.inputs.mode == 'production' }}
         working-directory: mobile/android
         run: |
-          ./gradlew assembleRelease \
+          gradle assembleRelease \
             --no-daemon \
             --stacktrace \
-            --max-workers=2 \
-            -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" \
+            --max-workers=1 \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=${GITHUB_WORKSPACE}/mobile/android/app/ci.keystore" \
             "-Pandroid.injected.signing.store.password=ci_password" \
             "-Pandroid.injected.signing.key.alias=release" \
@@ -103,16 +98,16 @@ jobs:
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
 
-      # ── 7. Store mode — AAB ────────────────────────────────────────────────
-      - name: Build release AAB (store)
+      # ── Store (AAB) ───────────────────────────────────────────────────────
+      - name: Build release AAB
         if: ${{ github.event.inputs.mode == 'store' }}
         working-directory: mobile/android
         run: |
-          ./gradlew bundleRelease \
+          gradle bundleRelease \
             --no-daemon \
             --stacktrace \
-            --max-workers=2 \
-            -Dorg.gradle.jvmargs="-Xmx3g -XX:MaxMetaspaceSize=512m" \
+            --max-workers=1 \
+            -Dorg.gradle.jvmargs="-Xmx2g -XX:MaxMetaspaceSize=512m" \
             "-Pandroid.injected.signing.store.file=${GITHUB_WORKSPACE}/mobile/android/app/ci.keystore" \
             "-Pandroid.injected.signing.store.password=ci_password" \
             "-Pandroid.injected.signing.key.alias=release" \
@@ -120,7 +115,7 @@ jobs:
             2>&1 | tee /tmp/gradle-build.log
           exit ${PIPESTATUS[0]}
 
-      # ── 8. Diagnostic en cas d'échec ───────────────────────────────────────
+      # ── Diagnostic en cas d'échec ─────────────────────────────────────────
       - name: Extract real error on failure
         if: failure()
         run: |
@@ -128,51 +123,11 @@ jobs:
           grep -A 10 "Caused by:" /tmp/gradle-build.log | head -60 || true
           echo "════════ WHAT WENT WRONG ════════"
           grep -A 10 "What went wrong" /tmp/gradle-build.log | head -40 || true
-          echo "════════ AAPT2 / RESSOURCES ════════"
-          grep -iE "(error:|AAPT|resource.*not found|failed)" /tmp/gradle-build.log | head -30 || true
 
-      # ── 9. Upload artifacts ────────────────────────────────────────────────
-      - name: Upload debug APK
-        if: ${{ github.event.inputs.mode == 'quick' || github.event.inputs.mode == '' }}
+      # ── Upload artifacts ──────────────────────────────────────────────────
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: barakabox-debug-apk
           path: mobile/android/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
-
-      - name: Upload signed release APK
-        if: ${{ github.event.inputs.mode == 'production' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: barakabox-release-apk
-          path: mobile/android/app/build/outputs/apk/release/*.apk
-          if-no-files-found: error
-
-      - name: Upload release AAB
-        if: ${{ github.event.inputs.mode == 'store' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: barakabox-release-aab
-          path: mobile/android/app/build/outputs/bundle/release/*.aab
-          if-no-files-found: error
-
-      # ── 10. Build summary ──────────────────────────────────────────────────
-      - name: Write build summary
-        if: always()
-        run: |
-          MODE="${{ github.event.inputs.mode || 'quick' }}"
-          STATUS="${{ job.status }}"
-          echo "## BarakaBox Android Build" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Champ | Valeur |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|-------|--------|" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Statut | $([[ $STATUS == 'success' ]] && echo '✅ Succès' || echo '❌ Échec') |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Mode | \`${MODE}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Run | #${{ github.run_number }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Déclenché par | ${{ github.actor }} |" >> "$GITHUB_STEP_SUMMARY"
-          echo "| Branch | \`${{ github.ref_name }}\` |" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "### Artifacts" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`barakabox-debug-apk\` — APK debug (mode quick)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`barakabox-release-apk\` — APK signé (mode production)" >> "$GITHUB_STEP_SUMMARY"
-          echo "- \`barakabox-release-aab\` — Bundle Play Store (mode store)" >> "$GITHUB_STEP_SUMMARY"
