@@ -23,7 +23,9 @@ import MyOrdersScreen from '../screens/orders/MyOrdersScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import AccountScreen from '../screens/profile/AccountScreen';
 import ReferralScreen from '../screens/profile/ReferralScreen';
+import OrderDetailScreen from '../screens/orders/OrderDetailScreen';
 import MerchantDashboardScreen from '../screens/merchant/MerchantDashboardScreen';
+import MerchantOnboardingScreen from '../screens/merchant/MerchantOnboardingScreen';
 import QRScannerScreen from '../screens/merchant/QRScannerScreen';
 
 const Stack = createNativeStackNavigator();
@@ -98,7 +100,9 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
         <Stack.Screen name="Account" component={AccountScreen} />
         <Stack.Screen name="Referral" component={ReferralScreen} />
+        <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
         <Stack.Screen name="MerchantDashboard" component={MerchantDashboardScreen} />
+        <Stack.Screen name="MerchantOnboarding" component={MerchantOnboardingScreen} />
         <Stack.Screen name="MerchantQRScanner" component={QRScannerScreen} options={{ presentation: 'modal' }} />
       </Stack.Navigator>
     </NavigationContainer>

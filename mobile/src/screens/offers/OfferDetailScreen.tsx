@@ -43,7 +43,7 @@ const OfferDetailScreen: React.FC = () => {
     if (!user) {
       Alert.alert('Connexion requise', 'Connectez-vous pour réserver', [
         { text: 'Annuler' },
-        { text: 'Se connecter', onPress: () => navigation.navigate('Auth', { screen: 'Login' }) },
+        { text: 'Se connecter', onPress: () => navigation.navigate('Login') },
       ]);
       return;
     }
