@@ -34,18 +34,10 @@ jobs:
         working-directory: mobile
         run: npx expo prebuild --platform android --clean --no-install 2>&1
 
-      # Force JS bundling inside the APK (sinon "Unable to load script" au lancement)
-      - name: Bundle JS into APK assets
-        working-directory: mobile
-        run: |
-          mkdir -p android/app/src/main/assets
-          npx react-native bundle \
-            --platform android \
-            --dev false \
-            --entry-file node_modules/expo/AppEntry.js \
-            --bundle-output android/app/src/main/assets/index.android.bundle \
-            --assets-dest android/app/src/main/res \
-            2>&1
+      # Force le Gradle plugin RN à bundler le JS dans l'APK (sinon "Unable to load script")
+      - name: Enable JS bundling in debug builds
+        working-directory: mobile/android
+        run: echo "bundleInDebug=true" >> gradle.properties
 
       # ── Java 17 + Gradle (même config que MobixBuild) ─────────────────────
       - name: Setup Java 17
