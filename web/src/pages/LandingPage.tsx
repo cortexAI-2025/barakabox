@@ -5,7 +5,6 @@ import {
   Leaf, Users, ShoppingBag, TrendingDown, CheckCircle, ArrowRight,
   Smartphone, Store
 } from 'lucide-react'
-import { CATEGORY_EMOJIS } from '../types'
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
